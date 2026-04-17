@@ -515,6 +515,7 @@ export default function App() {
   const [page, setPage] = useState("Home");
   const [detailBill, setDetailBill] = useState(null);
   const [societyId, setSocietyId] = useState(null);
+  const [loginSocName, setLoginSocName] = useState("");
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
 
@@ -537,16 +538,18 @@ export default function App() {
     const match = users.find(u => (u.email || "").trim().toLowerCase() === email);
     if (!match) { onErr("Email not found. Contact support@kazam.in for access."); return; }
     const sid = match.society_id;
+    const sname = match.society_name || "";
     setLoading(true);
     setDataLoading(true);
     setSocietyId(sid);
+    setLoginSocName(sname);
     // Load remaining data
     Promise.all([fetchCSV(SHEETS.master), fetchCSV(SHEETS.billing), fetchCSV(SHEETS.payments)])
       .then(([m, b, p]) => { setMaster(m); setBilling(b); setPayments(p); setDataLoading(false); setLoading(false); })
       .catch(() => { setError("Failed to load data. Please refresh."); setLoading(false); setDataLoading(false); });
   }, [users]);
 
-  const handleLogout = () => { setSocietyId(null); setPage("Home"); setDetailBill(null); setMaster(null); setBilling(null); setPayments(null); };
+  const handleLogout = () => { setSocietyId(null); setLoginSocName(""); setPage("Home"); setDetailBill(null); setMaster(null); setBilling(null); setPayments(null); };
   const handleNav = (p) => { setPage(p); setDetailBill(null); };
 
   // Not logged in
@@ -579,10 +582,13 @@ export default function App() {
   }
 
   // Filter data for this society
-  const society = master.find(m => m.society_id === societyId) || {};
-  const myBilling = billing.filter(b => b.society_id === societyId);
-  const socName = society.society_name || "";
-  const myPayments = payments.filter(p => (p.society_id === societyId) || (p.society_name || "").trim() === socName.trim());
+  const sidClean = (societyId || "").trim();
+  const society = master.find(m => (m.society_id || "").trim() === sidClean)
+    || master.find(m => (m.society_name || "").trim().toLowerCase() === (loginSocName || "").trim().toLowerCase())
+    || {};
+  const myBilling = billing.filter(b => (b.society_id || "").trim() === sidClean || (b.society_name || "").trim() === (society.society_name || "").trim());
+  const socName = society.society_name || loginSocName || sidClean;
+  const myPayments = payments.filter(p => (p.society_id || "").trim() === sidClean || (p.society_name || "").trim() === socName.trim());
 
   return (
     <div style={{ minHeight: "100vh", background: T.bg, fontFamily: T.font, color: T.text }}>
