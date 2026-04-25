@@ -391,16 +391,59 @@ function AgreementPage({ society }) {
           <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Current Terms</h3>
           <Badge status="Current" />
         </div>
-        <Row label="CPO (Charge Point Operator)" value={society.cpo_name || "Vida"} />
         <Row label="Electricity Rate" value={`₹${num(society.electricity_rate).toFixed(2)}/kWh`} />
         <Row label="Electricity Duty" value={society.electricity_duty || "Inclusive"} />
         <Row label="Finalized Rate" value={`₹${num(society.finalized_rate).toFixed(2)}/kWh`} />
-        <Row label="Society Fee" value={num(society.society_fee) > 0 ? `₹${num(society.society_fee).toFixed(0)}/kWh` : "None"} />
-        <Row label="No. of Chargers" value={society.no_of_chargers || "—"} />
         <Row label="Status" value={<Badge status={society.status || "Active"} />} />
         {society.agreement_date && society.agreement_date !== "" && society.agreement_date !== "nan" && (
-          <Row label="Agreement Date" value={society.agreement_date} last />
+          <Row label="Agreement Date" value={society.agreement_date} />
         )}
+        {society.agreement_tenure && society.agreement_tenure !== "" && society.agreement_tenure !== "nan" && (
+          <Row label="Agreement Tenure" value={society.agreement_tenure} last />
+        )}
+      </Card>
+
+      {/* Charger Breakdown */}
+      <Card>
+        <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 14px" }}>Charger Infrastructure</h3>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+            <thead>
+              <tr style={{ borderBottom: `2px solid ${T.border}` }}>
+                {["Charger Type", "Count", "CPO", "Society Fee"].map(h => (
+                  <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: T.textSec, fontWeight: 500, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { type: "3.3 kW", count: society.chargers_3_3kw, cpo: society.cpo_3_3kw, fee: society.society_fee_3_3kw },
+                { type: "7.4 kW", count: society.chargers_7_4kw, cpo: society.cpo_7_4kw, fee: society.society_fee_7_4kw },
+                { type: "11 kW", count: society.chargers_11kw, cpo: society.cpo_11kw, fee: society.society_fee_11kw },
+              ].filter(r => num(r.count) > 0).map((r, i, arr) => (
+                <tr key={r.type} style={{ borderBottom: i < arr.length - 1 ? `1px solid ${T.borderLight}` : "none" }}>
+                  <td style={{ padding: "11px 12px", fontWeight: 600 }}>{r.type}</td>
+                  <td style={{ padding: "11px 12px" }}>{r.count}</td>
+                  <td style={{ padding: "11px 12px" }}>
+                    <span style={{ background: T.accentBg, color: T.accent, padding: "2px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>{r.cpo || "—"}</span>
+                  </td>
+                  <td style={{ padding: "11px 12px" }}>{num(r.fee) > 0 ? `₹${num(r.fee).toFixed(0)}/kWh` : "None"}</td>
+                </tr>
+              ))}
+              {/* Fallback if no new columns yet — use old single columns */}
+              {num(society.chargers_3_3kw) === 0 && num(society.chargers_7_4kw) === 0 && num(society.chargers_11kw) === 0 && society.no_of_chargers && (
+                <tr>
+                  <td style={{ padding: "11px 12px", fontWeight: 600 }}>All Types</td>
+                  <td style={{ padding: "11px 12px" }}>{society.no_of_chargers}</td>
+                  <td style={{ padding: "11px 12px" }}>
+                    <span style={{ background: T.accentBg, color: T.accent, padding: "2px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600 }}>{society.cpo_name || "Vida"}</span>
+                  </td>
+                  <td style={{ padding: "11px 12px" }}>{num(society.society_fee) > 0 ? `₹${num(society.society_fee).toFixed(0)}/kWh` : "None"}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
       <Card>
         <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 14px" }}>Your Bank Details</h3>
@@ -483,7 +526,10 @@ function ContactPage({ society }) {
         <Row label="Society" value={society.society_name} />
         <Row label="City" value={society.city} />
         <Row label="State" value={society.state} />
-        <Row label="CPO" value={society.cpo_name || "Vida"} />
+        <Row label="CPO" value={
+          [society.cpo_3_3kw, society.cpo_7_4kw, society.cpo_11kw].filter(c => c && c !== "" && c !== "nan")
+            .filter((v, i, a) => a.indexOf(v) === i).join(", ") || society.cpo_name || "Vida"
+        } />
         {society.poc_name && society.poc_name !== "nan" && <Row label="POC" value={society.poc_name} />}
         {society.poc_phone && society.poc_phone !== "nan" && <Row label="Phone" value={society.poc_phone} />}
         {society.rwa_email && society.rwa_email !== "nan" && <Row label="Email" value={society.rwa_email} last={!hasMap} />}
