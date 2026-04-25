@@ -527,8 +527,25 @@ function ContactPage({ society }) {
         <Row label="City" value={society.city} />
         <Row label="State" value={society.state} />
         <Row label="CPO" value={
-          [society.cpo_3_3kw, society.cpo_7_4kw, society.cpo_11kw].filter(c => c && c !== "" && c !== "nan")
-            .filter((v, i, a) => a.indexOf(v) === i).join(", ") || society.cpo_name || "Vida"
+          (() => {
+            const types = [
+              { kw: "3.3 kW", cpo: society.cpo_3_3kw, count: society.chargers_3_3kw },
+              { kw: "7.4 kW", cpo: society.cpo_7_4kw, count: society.chargers_7_4kw },
+              { kw: "11 kW", cpo: society.cpo_11kw, count: society.chargers_11kw },
+            ].filter(t => num(t.count) > 0 && t.cpo && t.cpo !== "" && t.cpo !== "nan");
+            if (types.length === 0) return society.cpo_name || "Vida";
+            const unique = [...new Set(types.map(t => t.cpo))];
+            if (unique.length === 1) return unique[0];
+            return (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                {types.map(t => (
+                  <span key={t.kw} style={{ fontSize: 13 }}>
+                    <span style={{ color: T.textSec, fontWeight: 400 }}>{t.kw}:</span> {t.cpo}
+                  </span>
+                ))}
+              </div>
+            );
+          })()
         } />
         {society.poc_name && society.poc_name !== "nan" && <Row label="POC" value={society.poc_name} />}
         {society.poc_phone && society.poc_phone !== "nan" && <Row label="Phone" value={society.poc_phone} />}
