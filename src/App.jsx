@@ -22,6 +22,7 @@ async function fetchCSV(url) {
       header: true,
       skipEmptyLines: true,
       dynamicTyping: false,
+      transformHeader: (h) => h.trim().replace(/^\uFEFF/, ''),
       complete: (r) => resolve(r.data),
       error: (e) => reject(e),
     });
@@ -32,6 +33,16 @@ async function fetchCSV(url) {
 // UTILS
 // ═══════════════════════════════════════════════════════════
 const num = (v) => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+// Safe accessor — tries the key as-is and common variants
+const get = (obj, key) => {
+  if (!obj) return "";
+  if (obj[key] !== undefined) return obj[key];
+  // Try without BOM or whitespace
+  for (const k of Object.keys(obj)) {
+    if (k.trim().replace(/^\uFEFF/, '') === key) return obj[k];
+  }
+  return "";
+};
 const fmt = (n) => "₹" + num(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fk = (n) => num(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -417,9 +428,9 @@ function AgreementPage({ society }) {
             </thead>
             <tbody>
               {[
-                { type: "3.3 kW", count: society.chargers_3_3kw, cpo: society.cpo_3_3kw, fee: society.society_fee_3_3kw },
-                { type: "7.4 kW", count: society.chargers_7_4kw, cpo: society.cpo_7_4kw, fee: society.society_fee_7_4kw },
-                { type: "11 kW", count: society.chargers_11kw, cpo: society.cpo_11kw, fee: society.society_fee_11kw },
+                { type: "3.3 kW", count: get(society,"chargers_3_3kw"), cpo: get(society,"cpo_3_3kw"), fee: get(society,"society_fee_3_3kw") },
+                { type: "7.4 kW", count: get(society,"chargers_7_4kw"), cpo: get(society,"cpo_7_4kw"), fee: get(society,"society_fee_7_4kw") },
+                { type: "11 kW", count: get(society,"chargers_11kw"), cpo: get(society,"cpo_11kw"), fee: get(society,"society_fee_11kw") },
               ].filter(r => num(r.count) > 0).map((r, i, arr) => (
                 <tr key={r.type} style={{ borderBottom: i < arr.length - 1 ? `1px solid ${T.borderLight}` : "none" }}>
                   <td style={{ padding: "11px 12px", fontWeight: 600 }}>{r.type}</td>
@@ -431,7 +442,7 @@ function AgreementPage({ society }) {
                 </tr>
               ))}
               {/* Fallback if no new columns yet — use old single columns */}
-              {num(society.chargers_3_3kw) === 0 && num(society.chargers_7_4kw) === 0 && num(society.chargers_11kw) === 0 && society.no_of_chargers && (
+              {num(get(society,"chargers_3_3kw")) === 0 && num(get(society,"chargers_7_4kw")) === 0 && num(get(society,"chargers_11kw")) === 0 && society.no_of_chargers && (
                 <tr>
                   <td style={{ padding: "11px 12px", fontWeight: 600 }}>All Types</td>
                   <td style={{ padding: "11px 12px" }}>{society.no_of_chargers}</td>
@@ -529,9 +540,9 @@ function ContactPage({ society }) {
         <Row label="CPO" value={
           (() => {
             const types = [
-              { kw: "3.3 kW", cpo: society.cpo_3_3kw, count: society.chargers_3_3kw },
-              { kw: "7.4 kW", cpo: society.cpo_7_4kw, count: society.chargers_7_4kw },
-              { kw: "11 kW", cpo: society.cpo_11kw, count: society.chargers_11kw },
+              { kw: "3.3 kW", cpo: get(society,"cpo_3_3kw"), count: get(society,"chargers_3_3kw") },
+              { kw: "7.4 kW", cpo: get(society,"cpo_7_4kw"), count: get(society,"chargers_7_4kw") },
+              { kw: "11 kW", cpo: get(society,"cpo_11kw"), count: get(society,"chargers_11kw") },
             ].filter(t => num(t.count) > 0 && t.cpo && t.cpo !== "" && t.cpo !== "nan");
             if (types.length === 0) return society.cpo_name || "Vida";
             const unique = [...new Set(types.map(t => t.cpo))];
